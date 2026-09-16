@@ -5,7 +5,7 @@ const { writeFile } = require('node:fs/promises')
 const { join } = require('node:path')
 
 const base = 'https://cdn.jsdelivr.net/npm/@xyflow/system'
-const roots = ['getBezierPath', 'getSmoothStepPath', 'Position']
+const functions = ['getSmoothStepPath', 'Position']
 
 ;(async () => {
   const version = await fetch(`${base}/package.json`).then(r => r.json()).then(p => p.version)
@@ -19,12 +19,12 @@ const roots = ['getBezierPath', 'getSmoothStepPath', 'Position']
 
   const deps = new Set()
   const visit = name => deps.has(name) || (deps.add(name), names.filter(n => n !== name && uses(source(name), n)).forEach(visit))
-  roots.forEach(visit)
+  functions.forEach(visit)
 
   const code = names.filter(n => deps.has(n)).map(source).join('\n\n')
   const out = `// Extracted from @xyflow/system@${version} (MIT) by mattborn/xyflow-fns.\n${code}\n`
 
-  const { getSmoothStepPath } = new Function(`${out}\nreturn { ${roots.join(', ')} }`)()
+  const { getSmoothStepPath } = new Function(`${out}\nreturn { ${functions.join(', ')} }`)()
   if (!getSmoothStepPath({ sourcePosition: 'bottom', sourceX: 0, sourceY: 0, targetPosition: 'left', targetX: -200, targetY: 50 })[0].startsWith('M')) throw new Error('Extracted getSmoothStepPath failed')
 
   await writeFile(join(__dirname, 'xyflow-fns.js'), out)
